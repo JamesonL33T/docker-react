@@ -1,10 +1,18 @@
-FROM node:lts-alpine
-
-WORKDIR '/app'
-
+# Base stage for Node.js setup with Alpine
+FROM node:lts-alpine as node-base
+WORKDIR /app
 COPY package.json .
 RUN npm install
-
 COPY . .
-
 CMD ["npm", "run", "start"]
+
+FROM jenkins/agent:latest
+USER root
+RUN apt-get update && apt-get install -y awscli
+COPY --from=node-base /app /app
+RUN curl -fsSL https://deb.nodesource.com/setup_14.x | bash - \
+    && apt-get install -y nodejs
+USER jenkins
+WORKDIR /app
+CMD ["npm", "run", "start"]
+
